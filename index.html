@@ -1,0 +1,275 @@
+<html>
+<head>
+<title>Marbles!</title>
+</head>
+<body>
+	<div style="float:right">
+		<input name="showTime" style="color:#ff0000; width:300px; height:80px; text-align:center; font:30px Courier" id="showtime" type="text" value="0:0:0:0"> 
+	</div>
+
+	<div style="text-align:center;padding-left:222pt">
+		<p style="font-size:110px;font-family:harrington;color:Navy">Marbles</p>
+	</div>
+
+	<div style="text-align:center">
+		<p style="font-size:25px;font-family:MV Boli;color:Indigo">Choose the level</p>
+	</div>
+
+	<div style="text-align:center">
+		<input name="s" type="button" value="easy" onClick="se()">
+		<input name="d" type="button" value="normal" onClick="sn()">
+		<input name="d" type="button" value="hard" onClick="sh()">
+	</div>
+
+	<div style="text-align:center">
+		<p style="font-size:25px;font-family:MV Boli;color:Indigo">Use "W" to go up, "S" to go down<br>Press to start</p>
+	</div>
+
+	<div style="text-align:center">
+		<input name="start" type="button" value="start" onClick="interval()">
+	</div>
+
+
+	<div style="text-align:center;padding-top:10pt">
+		<canvas id="canvas" width="500" height="300"></canvas>
+	</div>
+
+</body>
+<script src="https://code.jquery.com/jquery-2.1.0.js"></script>
+<script>
+
+document.body.style.backgroundImage="url(http://imgsrc.baidu.com/forum/w%3D580/sign=9c79a4df978fa0ec7fc764051696594a/e8b60a35970a304edbb6c616d7c8a786cb175cf4.jpg)";
+
+
+// Set up canvas
+var canvas = document.getElementById("canvas"); 
+var ctx = canvas.getContext("2d");
+
+//get the width and height from the canvas element
+var width = canvas.width; 
+var height = canvas.height;
+
+// work out the width and height in blocks
+var blockSize = 10;
+var widthInBlocks = width / blockSize; 
+var heightInBlocks = height / blockSize;
+
+// set score to 0; set gameTime to 0
+var score = 0;
+var gameTime = 0;
+var hour = 0;
+var minute = 0;
+var second = 0;
+var millisecond = 0;
+
+//draw the border
+var drawBorder = function () {
+ctx.fillStyle = "Navy";
+ctx.fillRect(0, 0, width, 10);
+ctx.fillRect(0, height - 10, width, 10); 
+ctx.fillRect(0, 0, 10, height); 
+ctx.fillRect(width - 10, 0, 10, height);
+};
+
+
+//draw the gameTime on the top center every second
+var timeSet = function(){
+if((millisecond%100)==0){
+	second += 1;
+	millisecond = 1;
+}
+if(second>0 && (second%60)==0){
+	minute += 1;
+	second = 0;
+}
+if(minute>0 && (minute%60)==0){
+	hour += 1;
+	minute = 0;
+}
+var time = hour + ":" + minute + ":" + second + ":" + millisecond;
+
+document.getElementById("showtime").value = time;
+millisecond += 1;
+}
+
+
+
+
+
+//draw two boards: boardLeft, boardRight
+var h = 20;
+var H = 20;
+var dh = 15;
+var drawBoard = function(boardLength){
+	ctx.fillStyle="Salmon";
+	ctx.lineWidth = 2;
+	ctx.fillRect(10,H,10,boardLength);
+	ctx.fillRect(480,h,10,boardLength);
+}
+
+
+//draw a ball
+var circle = function(x,y,radius,fillCircle){
+	ctx.beginPath();
+	ctx.arc(x,y,radius, 0,Math.PI*2,true);
+	if(fillCircle){
+		ctx.fillStyle="salmon"
+		ctx.fill();//if true, fill the shape
+	} else {
+		ctx.stroke();//if false, stroke the shape
+	}
+}
+
+var ball = function(speed){
+	this.x = width/2;
+	this.y = height/2;
+	this.speed = speed;
+	this.radius = 10;
+	this.xSpeed = 1;
+	this.ySpeed = 0;
+}
+var dx = 5;
+var dy = -5;
+
+
+//let the ball move
+//update the ball s position based on its speed when it hit the board or the top and bottom border
+
+ball.prototype.draw = function(x,y){
+	circle(this.x,this.y,this.radius,true)
+}
+var Ball = new ball(5);
+
+
+//set the ball's direction based on a string
+ball.prototype.setDirection = function(){
+    if((this.y + dy > 280) || (this.y + dy < 20)) {
+        dy = -dy;
+    }
+    if((this.x === 30) || (this.x === 470)){
+    	if(this.y<H || this.y>H+boardLength){
+    		dx = dx;
+    	}else if(H-1<this.y<H+boardLength+1){
+    		dx = -dx
+    	}
+    }
+    if((this.x + dx < 21) || (this.x + dx > 479)){
+    	gameOver();
+    }
+    this.x += dx;
+    this.y += dy;
+}
+
+
+//set the two boards' direction
+var SboardDirection = function(boardLength,direction){
+	if(direction === "player1Up"){
+		H -= dh;
+		h -= dh;
+	}else if(direction === "player1Down"){
+		H += dh;
+		h += dh;
+	}
+}
+
+
+//when the ball hit the left or right border without being get by the board, game over.
+
+
+//make an object to convert keycodes into board action
+var keyActions = {
+	65:"start",
+	87:"player1Up",
+	83:"player1Down",
+}
+
+
+//create the keydown handler that will be called for every keypress
+var se = function(){
+	boardLength = 110;
+	$("body").keydown(function(event){
+		var direction = keyActions[event.keyCode];
+	if(H<20 && h<21){
+		H+=15;
+		h+=15;
+	} else if ((H>280-boardLength) && (h>280-boardLength)){
+		H-=15;
+		h-=15;
+	}
+		SboardDirection(boardLength,direction);
+	})
+}
+var sn = function(){
+	boardLength = 85;
+	$("body").keydown(function(event){
+		var direction = keyActions[event.keyCode];
+	if(H<20 && h<20){
+		H+=15;
+		h+=15;
+	} else if ((H>280-boardLength) && (h>280-boardLength)){
+		H-=15;
+		h-=15;
+	}
+		SboardDirection(boardLength,direction);
+	})
+}
+var sh = function(){
+	boardLength = 60;
+	dh = 10;
+	$("body").keydown(function(event){
+		var direction = keyActions[event.keyCode];
+	if(H<20 && h<20){
+		H+=10;
+		h+=10;
+	} else if ((H>280-boardLength) && (h>280-boardLength)){
+		H-=10;
+		h-=10;
+	}
+		SboardDirection(boardLength,direction);
+	})
+}
+
+var background = function(){
+	ctx.fillStyle = "Seashell";
+	ctx.fillRect(0,0,width,height);
+}
+
+//draw the animation function, call every certain time
+var interval = function(){
+	setInterval(function(){
+		ctx.clearRect(0,0,width,height);
+		background();
+		drawBorder();
+		drawBoard(boardLength);
+		Ball.draw();
+		Ball.setDirection();
+	},50);
+}
+
+	var startTime = setInterval("timeSet()", 1);
+	var stopTime = function(){clearInterval(startTime)}
+
+//display game over text on the middle of the canvas
+var gameOver = function () {
+		ctx.font = "bold 60px Courier";
+		ctx.fillStyle = "Salmon";
+		ctx.textAlign = "center";
+    	ctx.textBaseline = "middle";
+    	ctx.fillText("Game Over", width / 2, height / 2 -20);
+    	drawScore();
+    	stopTime();
+};
+var drawScore = function(){
+	ctx.font = "30px Courier";
+	ctx.fillStyle = "Salmon";
+	ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    var realTime = second + minute*60 + hour*60*60;
+    ctx.fillText("score: "+ realTime, width/2, height/2+30)
+}
+
+
+
+</script>
+</body>
+</html>
